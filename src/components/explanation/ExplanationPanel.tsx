@@ -1,16 +1,19 @@
 "use client";
 
-import { List } from "lucide-react";
+import { useEffect } from "react";
+import { List, RefreshCw, Settings } from "lucide-react";
 import { useProjectStore } from "@/store/projectStore";
-import { mockExplanations } from "@/mock/mockExplanations";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useExplanation } from "@/hooks/useExplanation";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import SectionBlock from "@/components/explanation/SectionBlock";
+import { StreamingIndicator } from "@/components/explanation/StreamingIndicator";
 import type { ExplanationLevel, LevelExplanation } from "@/types/explanation";
 
 const levelConfig: {
@@ -31,20 +34,78 @@ export default function ExplanationPanel() {
   const toggleExpandAllLevels = useProjectStore(
     (s) => s.toggleExpandAllLevels
   );
+  const apiKey = useProjectStore((s) => s.apiKey);
 
-  const fileExplanation = mockExplanations.find(
-    (e) => e.filePath === selectedFilePath
-  );
+  const {
+    getExplanation,
+    explanationCache,
+    explanationLoading,
+    explanationError,
+    streamingText,
+  } = useExplanation();
 
-  if (!selectedFilePath || !fileExplanation) {
+  // Auto-trigger explanation generation when file is selected
+  useEffect(() => {
+    if (selectedFilePath) {
+      getExplanation(selectedFilePath);
+    }
+  }, [selectedFilePath, getExplanation]);
+
+  if (!selectedFilePath) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        ファイルを選択してください
+      </div>
+    );
+  }
+
+  const isLoading = explanationLoading[selectedFilePath];
+  const error = explanationError[selectedFilePath];
+  const streaming = streamingText[selectedFilePath];
+  const explanations = explanationCache[selectedFilePath];
+
+  // Loading / Streaming state
+  if (isLoading) {
+    return <StreamingIndicator text={streaming} />;
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-4 text-center">
+        <p className="text-sm text-destructive">{error}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => getExplanation(selectedFilePath)}
+        >
+          <RefreshCw className="size-4" />
+          再試行
+        </Button>
+      </div>
+    );
+  }
+
+  // No API key set and no cached/mock data
+  if (!explanations && !apiKey) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-4 text-center">
+        <Settings className="size-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          AI解説を生成するには、ヘッダーの設定ボタンからAPIキーを入力してください
+        </p>
+      </div>
+    );
+  }
+
+  // No data available yet (API key set but not yet loaded)
+  if (!explanations) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
         解説データがありません
       </div>
     );
   }
-
-  const explanations = fileExplanation.explanations;
 
   const renderSections = (level: LevelExplanation) => (
     <div className="space-y-3">

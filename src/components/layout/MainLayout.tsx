@@ -22,6 +22,12 @@ function CenterPanel() {
 
 export function MainLayout() {
   const viewMode = useProjectStore((s) => s.viewMode);
+  const showSidePanels = viewMode !== "welcome";
+
+  if (!showSidePanels) {
+    return <CenterPanel />;
+  }
+
   const showRightPanel = viewMode === "code";
 
   return (

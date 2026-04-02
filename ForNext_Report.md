@@ -1,7 +1,7 @@
 # CodeTeacher ブリーフィングレポート
 
-> **最終更新**: 2026-03-29
-> **ステータス**: MVP実装完了 → 次回: AI連携・UI改善フェーズ
+> **最終更新**: 2026-04-02
+> **ステータス**: AI連携実装完了 → 次回: 実API動作検証・UI/UX改善フェーズ
 > **リポジトリ**: https://github.com/Jun-Jun0510/CodeTeacher
 > **起動方法**: `cd code-teacher && npm run dev` → http://localhost:3000
 
@@ -11,6 +11,7 @@
 
 **CodeTeacher** は、コード解読支援Webツールです。
 ユーザーがローカルのプロジェクトフォルダを開くと、ファイルツリー・コード表示・レベル別解説が3ペインで表示されます。
+Claude API連携により、任意のファイルに対して初級/中級/上級の解説をAI自動生成できます。
 
 **ターゲットユーザー**: プログラミング学習者〜中級者（当初はC言語エンジニア向けだったが、汎用的な解説に方針変更済み）
 
@@ -20,15 +21,6 @@
 
 ### フェーズ1: 設計議論（2026-03-28）
 エージェントチーム3名（architect / ux-designer / domain-expert）で設計議論を実施。
-各メンバーが設計書を作成し、クロスレビューで合意を形成した。
-
-```
-architect（技術設計）
-    ↕ クロスレビュー
-ux-designer（UI/UX設計）
-    ↕ クロスレビュー
-domain-expert（C言語マッピング設計）
-```
 
 **成果物（設計書）**:
 | ファイル | 内容 |
@@ -38,41 +30,48 @@ domain-expert（C言語マッピング設計）
 | `c_language_mapping_design.md` | C言語マッピング体系、全3レベルの対比表（リファレンス用） |
 
 ### フェーズ2: 方針変更（2026-03-29）
-ユーザーのフィードバックにより、**C言語マッピングに固執しない方針に変更**。
-
-| 変更前 | 変更後 | 理由 |
-|--------|--------|------|
-| C言語エンジニア専用ツール | 汎用的なコード解読支援ツール | 幅広いユーザーに有用 |
-| Lv1:直訳 / Lv2:概念変換 / Lv3:設計思想 | **初級 / 中級 / 上級** | レベルが直感的 |
-| C言語比喩を全面に表示 | **オプション折りたたみ** | 簡単な内容にまでC説明は冗長 |
+C言語マッピングに固執しない方針に変更。レベル名を「初級/中級/上級」に統一。C言語比喩はオプション折りたたみに。
 
 ### フェーズ3: MVP実装（2026-03-29）
 エージェントチーム2名（layout-dev / panel-dev）で並列実装。ビルド成功・GitHubプッシュ済み。
 
+### フェーズ4: AI連携実装（2026-04-02）★今回
+Claude API（claude-sonnet-4-20250514）を使った解説自動生成機能を実装。SSEストリーミング対応。
+
 ---
 
-## 3. 現在の実装状況（MVP完了）
+## 3. 現在の実装状況
 
 ### 動作する機能
 | 機能 | 状態 | 詳細 |
 |------|:----:|------|
-| Welcome画面 | ✅ | 「デモで試す」「フォルダを開く」ボタン |
+| Welcome画面 | ✅ | レスポンシブ対応済み（狭い画面でも崩れない） |
 | フォルダ読み込み | ✅ | File System Access API + webkitdirectory フォールバック |
 | ファイルツリー | ✅ | 再帰的表示、フォルダ展開/折りたたみ、拡張子別アイコン |
 | コードビューア | ✅ | Prism シンタックスハイライト、行番号、ブレッドクラム |
-| 解説パネル | ✅ | 初級/中級/上級タブ、全展開トグル |
+| 解説パネル | ✅ | 初級/中級/上級タブ、全展開トグル、**AI自動生成対応** |
 | C言語比喩ブロック | ✅ | オプション折りたたみ、Cコードスニペット表示 |
-| Global Summary | ✅ | ダッシュボード形式（プロジェクト構造、依存関係、概念マッピング） |
+| Global Summary | ✅ | ダッシュボード形式、**AI自動生成対応** |
 | 行ハイライト連動 | ✅ | 解説セクションクリック → コード行ハイライト + スクロール |
 | 3ペインリサイズ | ✅ | shadcn ResizablePanelGroup |
-| デモモード | ✅ | FastAPI Todoアプリのモックデータ |
+| デモモード | ✅ | FastAPI Todoアプリのモックデータ（APIキー不要） |
+| **設定ダイアログ** | ✅ | ヘッダーの歯車アイコン → APIキー入力・保存・クリア |
+| **AI解説生成** | ✅ | ファイル選択時に自動トリガー、SSEストリーミング表示 |
+| **解説キャッシュ** | ✅ | 同一ファイル再選択時はAPI再呼び出しなし |
+| **エラーハンドリング** | ✅ | APIキー未設定 → 設定誘導、エラー → 再試行ボタン |
+
+### 未検証（次回要確認）
+| 項目 | 詳細 |
+|------|------|
+| **実APIでのAI生成動作** | APIキーを入力しての実際のAI解説生成はまだ未テスト。SSE解析・JSON解析のE2E確認が必要 |
+| **プロンプト品質** | 生成される解説の品質・JSON構造の安定性の検証 |
+| **Global Summary自動生成** | 非デモプロジェクトでのGlobal Summary生成の動作確認 |
 
 ### 制約（現在の制限）
 | 制約 | 詳細 |
 |------|------|
-| **解説はモックデータのみ** | FastAPI Todoの4ファイル（main.py, models.py, routes/todos.py, database.py）のみ解説あり。ユーザーが自分のフォルダを開いた場合、コードは表示されるが解説は「データがありません」 |
 | ダークモードのみ | ライトモード未実装 |
-| デスクトップ専用 | 1024px未満のレスポンシブ未対応 |
+| デスクトップ推奨 | Welcome画面はレスポンシブ対応済みだが、3ペイン表示は狭い画面で窮屈 |
 | Safari/Firefox制限 | File System Access API 非対応（input webkitdirectory でフォールバック） |
 
 ---
@@ -86,12 +85,14 @@ domain-expert（C言語マッピング設計）
 | アイコン | Lucide React | 最新 |
 | コード表示 | react-syntax-highlighter (Prism) | 15.x |
 | 状態管理 | Zustand | 5.x |
+| AI API | @anthropic-ai/sdk | 最新 |
+| AIモデル | claude-sonnet-4-20250514 | - |
 | 言語 | TypeScript | 5.x |
 | テーマ | next-themes（ダークモード固定） | 最新 |
 
 ---
 
-## 5. ディレクトリ構成（実装済み）
+## 5. ディレクトリ構成
 
 ```
 code-teacher/
@@ -99,14 +100,19 @@ code-teacher/
 │   ├── app/
 │   │   ├── layout.tsx              # ThemeProvider、ダークモード設定
 │   │   ├── page.tsx                # メインページ（'use client'）
-│   │   └── globals.css             # Tailwind + shadcn テーマ変数
+│   │   ├── globals.css             # Tailwind + shadcn テーマ変数
+│   │   └── api/
+│   │       ├── explain/
+│   │       │   └── route.ts        # ★ POST: ファイル解説生成（SSEストリーミング）
+│   │       └── global-summary/
+│   │           └── route.ts        # ★ POST: Global Summary生成（SSEストリーミング）
 │   │
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── Header.tsx          # ロゴ + 「フォルダを開く」「デモで試す」
-│   │   │   ├── MainLayout.tsx      # 3ペイン（viewModeで切替）
+│   │   │   ├── Header.tsx          # ロゴ + 「フォルダを開く」「デモで試す」+ ★設定ボタン
+│   │   │   ├── MainLayout.tsx      # 3ペイン（welcomeモードではパネルなし）
 │   │   │   ├── StatusBar.tsx       # ファイル情報バー
-│   │   │   └── WelcomeView.tsx     # 初期画面
+│   │   │   └── WelcomeView.tsx     # 初期画面（★レスポンシブ対応済み）
 │   │   ├── file-tree/
 │   │   │   ├── FileTree.tsx        # ツリー全体 + Global Summaryリンク
 │   │   │   ├── FileTreeNode.tsx    # 再帰的フォルダ/ファイルノード
@@ -114,20 +120,27 @@ code-teacher/
 │   │   ├── code-view/
 │   │   │   └── CodeViewer.tsx      # Prism シンタックスハイライト + 行ハイライト
 │   │   ├── explanation/
-│   │   │   ├── ExplanationPanel.tsx # 初級/中級/上級タブ + 全展開
-│   │   │   ├── SectionBlock.tsx    # 解説セクション（タイトル+行番号+難易度+本文）
-│   │   │   └── CAnalogy.tsx        # C言語比喩（折りたたみオプション）
+│   │   │   ├── ExplanationPanel.tsx # ★AI連携: キャッシュ→モック→API自動生成
+│   │   │   ├── SectionBlock.tsx    # 解説セクション
+│   │   │   ├── CAnalogy.tsx        # C言語比喩（折りたたみオプション）
+│   │   │   └── StreamingIndicator.tsx # ★AI生成中のスピナー+プレビュー
+│   │   ├── settings/
+│   │   │   └── SettingsDialog.tsx   # ★APIキー入力ダイアログ（独自実装）
 │   │   ├── global-summary/
-│   │   │   └── GlobalSummary.tsx   # ダッシュボード
+│   │   │   └── GlobalSummary.tsx   # ★AI連携: store → モックフォールバック
 │   │   └── ui/                     # shadcn/ui コンポーネント群
 │   │
 │   ├── hooks/
-│   │   └── useFileSystem.ts        # File System Access API + フォールバック
+│   │   ├── useFileSystem.ts        # File System Access API + フォールバック
+│   │   ├── useExplanation.ts       # ★キャッシュ確認→モック→API呼び出し
+│   │   └── useGlobalSummary.ts     # ★Global Summary生成フック
 │   ├── store/
-│   │   └── projectStore.ts         # Zustand（fileTree, selectedFile, activeLevel, viewMode 等）
+│   │   └── projectStore.ts         # ★拡張済み: apiKey, explanationCache, loading/error/streaming, globalSummary
 │   ├── lib/
 │   │   ├── languageDetector.ts     # 拡張子→言語名
-│   │   └── utils.ts                # shadcn cn() ユーティリティ
+│   │   ├── utils.ts                # shadcn cn() ユーティリティ
+│   │   ├── prompts.ts              # ★プロンプトテンプレート（日本語解説生成指示）
+│   │   └── apiClient.ts            # ★SSEストリーム消費、JSON解析
 │   ├── mock/
 │   │   ├── mockProject.ts          # FastAPI Todoのファイルツリー + コンテンツ
 │   │   ├── mockExplanations.ts     # 4ファイル × 3レベルの解説データ
@@ -137,149 +150,116 @@ code-teacher/
 │       └── explanation.ts          # ExplanationLevel, CAnalogy, FileExplanation, GlobalSummaryData 等
 ```
 
+★ = 今回（フェーズ4）で新規追加/変更したファイル
+
 ---
 
-## 6. 主要な設計決定（確定済み）
+## 6. AI連携アーキテクチャ（フェーズ4で実装）
+
+### データフロー
+```
+ファイル選択 → ExplanationPanel useEffect
+  → キャッシュあり → 即表示
+  → モックマッチ → モックデータ使用（デモモード互換）
+  → APIキーなし → 設定誘導表示
+  → APIキーあり → POST /api/explain（SSEストリーミング）
+    → streamingText更新 → StreamingIndicator表示
+    → 完了 → JSON解析 → explanationCache格納 → 解説表示
+```
+
+### APIルート設計
+- `POST /api/explain` — `{ filePath, code, apiKey }` → SSEストリーム
+- `POST /api/global-summary` — `{ fileStructure, sampleContents, apiKey }` → SSEストリーム
+- Anthropic SDK の `messages.stream()` 使用
+- エラー: 401（APIキー無効）/ 429（レート制限）/ ネットワークエラー
+
+### 重要な技術的判断
+| 判断 | 理由 |
+|------|------|
+| **base-ui Dialog 不使用** | `@base-ui/react/dialog` が Next.js 16 のルーターと衝突（`Router action dispatched before initialization`エラー）。SettingsDialog は独自実装のオーバーレイで代替 |
+| **Welcome時はパネル非表示** | `MainLayout` で welcomeモード時に FileTree/ResizablePanel を非表示化。狭い画面でテキストが1文字ずつ改行される問題を解消 |
+| **APIキーはlocalStorage** | ブラウザに保存、サーバーには送らない。`reset()` でもクリアしない設計 |
+
+---
+
+## 7. 主要な設計決定（確定済み）
 
 | 決定事項 | 内容 | 経緯 |
 |---------|------|------|
 | **レベル名** | 初級 / 中級 / 上級 | 当初はC言語対比だったが、ユーザーFBで汎用化 |
-| **状態管理** | Zustand | Context APIより再レンダリング最適化が3ペインで重要（architect提案） |
-| **Global Summary** | ダッシュボード形式 | モーダルよりも情報密度が高い（ux-designer提案） |
-| **C言語比喩** | オプション折りたたみ | 全面表示は冗長。ある場合のみ補足表示（ユーザーFB） |
-| **ファイル読み込み** | 遅延読み込み | ツリー構造のみ先行構築、コンテンツはクリック時に読み込み（architect提案） |
-| **解説パネル** | タブ + 全展開トグル | domain-expert + ux-designer 合意のハイブリッド方式 |
+| **状態管理** | Zustand | Context APIより再レンダリング最適化が3ペインで重要 |
+| **Global Summary** | ダッシュボード形式 | モーダルよりも情報密度が高い |
+| **C言語比喩** | オプション折りたたみ | 全面表示は冗長。ある場合のみ補足表示 |
+| **ファイル読み込み** | 遅延読み込み | ツリー構造のみ先行構築、コンテンツはクリック時 |
+| **AIモデル** | claude-sonnet-4-20250514 | コスト・速度・品質のバランス |
+| **ストリーミング** | SSE（Server-Sent Events） | WebSocketより実装がシンプルでHTTP互換 |
 
 ---
 
-## 7. 次に着手すべきタスク（優先度順）
+## 8. Zustand ストア（拡張済み）
 
-### 最優先: AI連携（解説自動生成）
-現状最大のギャップ。ユーザーが自分のフォルダを開いても解説がない。
+```typescript
+interface ProjectState {
+  // MVP部分
+  fileTree: FileNode[];
+  selectedFilePath: string | null;
+  fileContents: Record<string, string>;
+  activeLevel: ExplanationLevel;
+  expandAllLevels: boolean;
+  viewMode: ViewMode;
+  highlightedLines: number[];
 
-| タスク | 内容 | 想定工数 |
-|--------|------|---------|
-| **Claude API 連携** | ファイル選択時にClaude APIを呼び出し、初級/中級/上級の解説を動的生成 | 大 |
-| **プロンプト設計** | 各レベルに適した解説を生成するプロンプトテンプレート作成 | 中 |
-| **ストリーミング表示** | 解説生成中のローディング/ストリーミング表示 | 中 |
-| **APIキー管理** | ユーザーがAPIキーを入力するUI、またはバックエンドProxy | 中 |
-| **Global Summary自動生成** | プロジェクト全体を分析して概要を自動生成 | 中 |
+  // ★ AI連携（フェーズ4追加）
+  apiKey: string;                                        // localStorage連携
+  explanationCache: Record<string, FileExplanation["explanations"]>;
+  explanationLoading: Record<string, boolean>;
+  explanationError: Record<string, string>;
+  streamingText: Record<string, string>;
+  globalSummary: GlobalSummaryData | null;
+  globalSummaryLoading: boolean;
+  globalSummaryError: string;
+  // + 各フィールドのsetter + reset()
+}
+```
+
+---
+
+## 9. 次に着手すべきタスク（優先度順）
+
+### 最優先: AI動作検証
+| タスク | 内容 |
+|--------|------|
+| **実APIキーでの動作テスト** | APIキーを入力し、実際にファイル解説が生成されるかE2E確認 |
+| **プロンプト品質チューニング** | 生成されるJSONの構造安定性、解説の質・粒度を検証・調整 |
+| **Global Summary実動作確認** | 非デモプロジェクトでの自動生成を検証 |
 
 ### 高優先: UI/UX改善
 | タスク | 内容 |
 |--------|------|
-| **行ホバーツールチップ** | コード行にホバーで簡易説明ポップアップ（データ構造は定義済み） |
-| **キーボードショートカット** | Ctrl+1/2/3 でレベル切替、Ctrl+B でサイドバー、Ctrl+G でGlobal Summary |
-| **ファイルタブ** | 複数ファイル同時オープン（現在はブレッドクラムのみ） |
+| **行ホバーツールチップ** | コード行にホバーで簡易説明ポップアップ |
+| **キーボードショートカット** | Ctrl+1/2/3 でレベル切替、Ctrl+B でサイドバー |
+| **ファイルタブ** | 複数ファイル同時オープン |
 | **ライトモード** | next-themes でダーク/ライト切替 |
 | **ファイルツリー検索** | インクリメンタルフィルタ |
 
 ### 中優先: 品質・拡張
 | タスク | 内容 |
 |--------|------|
-| **用語集パネル** | インラインツールチップ → 独立パネルへ拡張 |
-| **エラーハンドリング** | ファイル読み込み失敗、大きすぎるファイルの警告 |
-| **パフォーマンス** | PrismLight + dynamic import、大規模ツリーの仮想化 |
+| **用語集パネル** | インラインツールチップ → 独立パネル |
+| **エラーハンドリング強化** | ファイル読み込み失敗、大きすぎるファイル警告 |
+| **パフォーマンス** | PrismLight + dynamic import、大規模ツリー仮想化 |
 | **テスト** | コンポーネントテスト、E2Eテスト |
 | **デプロイ** | Vercel デプロイ設定 |
 
 ---
 
-## 8. 型定義リファレンス（実装済み）
-
-```typescript
-// types/fileTree.ts
-interface FileNode {
-  name: string;
-  path: string;
-  type: "file" | "directory";
-  children?: FileNode[];
-  content?: string;
-  language?: string;
-}
-
-// types/explanation.ts
-type ExplanationLevel = "beginner" | "intermediate" | "advanced";
-type Difficulty = "green" | "amber" | "red";
-
-interface CAnalogy {
-  concept: string;
-  cEquivalent: string;
-  detail: string;
-  cCodeSnippet?: string;  // オプション: Cコードスニペット
-  warning?: string;        // オプション: 比喩の注意事項
-}
-
-interface ExplanationSection {
-  id: string;
-  title: string;
-  startLine: number;
-  endLine: number;
-  content: string;
-  difficulty: Difficulty;
-  cAnalogies?: CAnalogy[];  // オプション: C言語比喩
-}
-
-interface FileExplanation {
-  filePath: string;
-  explanations: {
-    beginner: LevelExplanation;
-    intermediate: LevelExplanation;
-    advanced: LevelExplanation;
-  };
-}
-
-interface GlobalSummaryData {
-  projectName: string;
-  overview: string;
-  language: string;
-  fileCount: number;
-  totalLines: number;
-  structure: { path: string; role: string }[];
-  dependencies: { name: string; description: string }[];
-  concepts: { source: string; target: string; description: string }[];
-}
-```
-
----
-
-## 9. Zustand ストア（実装済み）
-
-```typescript
-// store/projectStore.ts
-type ViewMode = "welcome" | "code" | "globalSummary";
-
-interface ProjectState {
-  fileTree: FileNode[];
-  selectedFilePath: string | null;
-  fileContents: Record<string, string>;
-  activeLevel: ExplanationLevel;      // "beginner" | "intermediate" | "advanced"
-  expandAllLevels: boolean;
-  viewMode: ViewMode;
-  highlightedLines: number[];
-  // + setter関数群 + reset()
-}
-```
-
----
-
-## 10. Git履歴
-
-```
-a8ff98c feat: CodeTeacher MVP実装
-81c87d3 feat: initial commit
-06cfde6 Initial commit from Create Next App
-```
-
----
-
-## 11. 関連ドキュメント一覧
+## 10. 関連ドキュメント一覧
 
 | ファイル | 場所 | 用途 |
 |---------|------|------|
 | `ForNext_Report.md` | プロジェクトルート | **本ファイル**（ブリーフィング資料） |
-| `SESSION_SUMMARY.md` | プロジェクトルート | 設計セッションの詳細まとめ（設計フェーズの議論経緯） |
+| `SESSION_SUMMARY.md` | プロジェクトルート | 設計セッションの詳細まとめ |
 | `project_brief.txt` | プロジェクトルート | 元の要件書 |
-| `architecture_design.md` | プロジェクトルート | 技術アーキテクチャ設計書（クロスレビュー統合済み） |
+| `architecture_design.md` | プロジェクトルート | 技術アーキテクチャ設計書 |
 | `docs/ui-ux-design.md` | docs/ | UI/UX設計書 |
 | `c_language_mapping_design.md` | プロジェクトルート | C言語マッピング体系（リファレンス用） |

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useProjectStore } from "@/store/projectStore";
 import { useFileSystem } from "@/hooks/useFileSystem";
 import { mockFileTree, mockFileContents } from "@/mock/mockProject";
+import { SettingsDialog } from "@/components/settings/SettingsDialog";
 
 export function Header() {
   const { setFileTree, setFileContent, setViewMode } = useProjectStore();
@@ -33,6 +34,7 @@ export function Header() {
           <Play className="size-4" />
           <span className="hidden sm:inline">デモで試す</span>
         </Button>
+        <SettingsDialog />
       </div>
     </header>
   );
