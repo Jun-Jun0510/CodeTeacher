@@ -110,6 +110,34 @@ export async function fetchGlobalSummaryStream(
   }
 }
 
+export async function fetchFocusExplanationStream(
+  filePath: string,
+  code: string,
+  startLine: number,
+  endLine: number,
+  level: string,
+  apiKey: string,
+  callbacks: StreamCallbacks
+) {
+  try {
+    const response = await fetch("/api/focus-explain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filePath, code, startLine, endLine, level, apiKey }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => null);
+      callbacks.onError(err?.error ?? `HTTPエラー: ${response.status}`);
+      return;
+    }
+
+    await consumeSSEStream(response, callbacks);
+  } catch {
+    callbacks.onError("ネットワークエラーが発生しました");
+  }
+}
+
 export function parseExplanationJSON(
   text: string
 ): FileExplanation["explanations"] | null {

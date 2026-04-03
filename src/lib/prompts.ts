@@ -78,6 +78,52 @@ ${code}
 `;
 }
 
+export function buildFocusExplanationPrompt(
+  filePath: string,
+  code: string,
+  startLine: number,
+  endLine: number,
+  level: "beginner" | "intermediate" | "advanced"
+): string {
+  const levelLabel =
+    level === "beginner" ? "初級（初心者向け）" :
+    level === "intermediate" ? "中級（実務者向け）" :
+    "上級（エキスパート向け）";
+
+  const levelInstruction =
+    level === "beginner"
+      ? "専門用語は避け、日常的な例えを使って分かりやすく説明してください。C言語との対比が有用であれば含めてください。"
+      : level === "intermediate"
+        ? "フレームワークやデザインパターンの知識を含めて説明してください。"
+        : "内部実装、パフォーマンス、設計思想を含めた詳細な説明をしてください。";
+
+  return `あなたはプログラミング教育の専門家です。以下のソースコードの特定の行範囲について、**短く要点を絞った**解説を生成してください。
+
+## 対象ファイル
+パス: ${filePath}
+
+## ソースコード全体
+\`\`\`
+${code}
+\`\`\`
+
+## フォーカス対象
+行 ${startLine} 〜 行 ${endLine} に注目してください。
+ただし、前後の関連する行も含めて一塊として説明して構いません。
+
+## 解説レベル
+${levelLabel}
+${levelInstruction}
+
+## 出力形式
+- Markdown形式で出力（JSONではない）
+- **3〜6文程度の短い解説**にまとめること。冗長な説明は不要
+- 箇条書きを活用し、1項目1行で簡潔に書く
+- コード例は本当に必要な場合のみ最小限で
+- 全て日本語で記述
+`;
+}
+
 export function buildGlobalSummaryPrompt(
   fileStructure: string,
   sampleContents: string

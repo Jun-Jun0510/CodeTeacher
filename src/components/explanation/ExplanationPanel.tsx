@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { List, RefreshCw, Settings } from "lucide-react";
+import { List, RefreshCw, Settings, X, Loader2 } from "lucide-react";
 import { useProjectStore } from "@/store/projectStore";
 import { useExplanation } from "@/hooks/useExplanation";
+import { useFocusExplanation } from "@/hooks/useFocusExplanation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Collapsible,
@@ -14,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import SectionBlock from "@/components/explanation/SectionBlock";
 import { StreamingIndicator } from "@/components/explanation/StreamingIndicator";
+import ReactMarkdown from "react-markdown";
 import type { ExplanationLevel, LevelExplanation } from "@/types/explanation";
 
 const levelConfig: {
@@ -25,6 +27,72 @@ const levelConfig: {
   { value: "intermediate", label: "中級", dotColor: "bg-amber-500" },
   { value: "advanced", label: "上級", dotColor: "bg-red-500" },
 ];
+
+function FocusExplanationBlock() {
+  const focusedLines = useProjectStore((s) => s.focusedLines);
+  const focusedExplanation = useProjectStore((s) => s.focusedExplanation);
+  const focusedExplanationLoading = useProjectStore(
+    (s) => s.focusedExplanationLoading
+  );
+  const focusedExplanationError = useProjectStore(
+    (s) => s.focusedExplanationError
+  );
+  const setFocusedLines = useProjectStore((s) => s.setFocusedLines);
+  const { retry } = useFocusExplanation();
+
+  if (!focusedLines) return null;
+
+  const label =
+    focusedLines.start === focusedLines.end
+      ? `L${focusedLines.start}`
+      : `L${focusedLines.start}-${focusedLines.end}`;
+
+  return (
+    <div className="rounded-lg border border-purple-500/30 bg-purple-500/5">
+      <div className="flex items-center justify-between border-b border-purple-500/20 px-4 py-2">
+        <h3 className="text-sm font-medium text-purple-300">
+          {label} のフォーカス解説
+        </h3>
+        <button
+          onClick={() => setFocusedLines(null)}
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          title="フォーカス解説を閉じる"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+
+      <div className="p-4">
+        {focusedExplanationError ? (
+          <div className="flex flex-col items-center gap-2 text-center">
+            <p className="text-sm text-destructive">
+              {focusedExplanationError}
+            </p>
+            <Button variant="outline" size="sm" onClick={retry}>
+              <RefreshCw className="size-4" />
+              再試行
+            </Button>
+          </div>
+        ) : focusedExplanationLoading && !focusedExplanation ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            解説を生成中...
+          </div>
+        ) : focusedExplanation ? (
+          <div className="prose prose-sm prose-invert max-w-none">
+            <ReactMarkdown>{focusedExplanation}</ReactMarkdown>
+            {focusedExplanationLoading && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="size-3 animate-spin" />
+                生成中...
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default function ExplanationPanel() {
   const selectedFilePath = useProjectStore((s) => s.selectedFilePath);
@@ -146,6 +214,8 @@ export default function ExplanationPanel() {
 
       <ScrollArea className="flex-1 overflow-auto">
         <div className="p-4 space-y-4">
+          <FocusExplanationBlock />
+
           {expandAllLevels ? (
             levelConfig.map((lc) => (
               <Collapsible key={lc.value} defaultOpen>

@@ -30,6 +30,19 @@ interface ProjectState {
   highlightedLines: number[];
   setHighlightedLines: (lines: number[]) => void;
 
+  // Focus explanation state
+  focusedLines: { start: number; end: number } | null;
+  setFocusedLines: (lines: { start: number; end: number } | null) => void;
+
+  focusedExplanation: string | null;
+  setFocusedExplanation: (text: string | null) => void;
+
+  focusedExplanationLoading: boolean;
+  setFocusedExplanationLoading: (loading: boolean) => void;
+
+  focusedExplanationError: string;
+  setFocusedExplanationError: (error: string) => void;
+
   // AI integration state
   apiKey: string;
   setApiKey: (key: string) => void;
@@ -74,6 +87,10 @@ const initialState = {
   expandAllLevels: false,
   viewMode: "welcome" as ViewMode,
   highlightedLines: [],
+  focusedLines: null as { start: number; end: number } | null,
+  focusedExplanation: null as string | null,
+  focusedExplanationLoading: false,
+  focusedExplanationError: "",
   explanationCache: {},
   explanationLoading: {},
   explanationError: {},
@@ -90,7 +107,15 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setFileTree: (tree) => set({ fileTree: tree }),
 
   selectFile: (path) =>
-    set({ selectedFilePath: path, viewMode: "code", highlightedLines: [] }),
+    set({
+      selectedFilePath: path,
+      viewMode: "code",
+      highlightedLines: [],
+      focusedLines: null,
+      focusedExplanation: null,
+      focusedExplanationLoading: false,
+      focusedExplanationError: "",
+    }),
 
   setFileContent: (path, content) =>
     set((state) => ({
@@ -105,6 +130,14 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
 
   setHighlightedLines: (lines) => set({ highlightedLines: lines }),
+
+  // Focus explanation setters
+  setFocusedLines: (lines) => set({ focusedLines: lines }),
+  setFocusedExplanation: (text) => set({ focusedExplanation: text }),
+  setFocusedExplanationLoading: (loading) =>
+    set({ focusedExplanationLoading: loading }),
+  setFocusedExplanationError: (error) =>
+    set({ focusedExplanationError: error }),
 
   // AI integration setters
   setApiKey: (key) => {
