@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { List, RefreshCw, Settings, X, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { GitBranch, List, RefreshCw, Settings, X, Loader2 } from "lucide-react";
 import { useProjectStore } from "@/store/projectStore";
 import { useExplanation } from "@/hooks/useExplanation";
 import { useFocusExplanation } from "@/hooks/useFocusExplanation";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import SectionBlock from "@/components/explanation/SectionBlock";
 import { StreamingIndicator } from "@/components/explanation/StreamingIndicator";
 import ReactMarkdown from "react-markdown";
+import { FlowchartDialog } from "@/components/explanation/FlowchartDialog";
 import type { ExplanationLevel, LevelExplanation } from "@/types/explanation";
 
 const levelConfig: {
@@ -95,6 +96,7 @@ function FocusExplanationBlock() {
 }
 
 export default function ExplanationPanel() {
+  const [flowchartOpen, setFlowchartOpen] = useState(false);
   const selectedFilePath = useProjectStore((s) => s.selectedFilePath);
   const activeLevel = useProjectStore((s) => s.activeLevel);
   const setActiveLevel = useProjectStore((s) => s.setActiveLevel);
@@ -202,8 +204,15 @@ export default function ExplanationPanel() {
           </TabsList>
         </Tabs>
         <button
+          onClick={() => setFlowchartOpen(true)}
+          className="ml-2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          title="フローチャートを表示"
+        >
+          <GitBranch className="size-4" />
+        </button>
+        <button
           onClick={toggleExpandAllLevels}
-          className={`ml-2 rounded-md p-1.5 transition-colors hover:bg-muted ${
+          className={`ml-1 rounded-md p-1.5 transition-colors hover:bg-muted ${
             expandAllLevels ? "bg-muted text-foreground" : "text-muted-foreground"
           }`}
           title={expandAllLevels ? "アクティブレベルのみ表示" : "全レベル展開"}
@@ -239,6 +248,8 @@ export default function ExplanationPanel() {
           )}
         </div>
       </ScrollArea>
+
+      <FlowchartDialog open={flowchartOpen} onOpenChange={setFlowchartOpen} />
     </div>
   );
 }

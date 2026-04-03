@@ -138,6 +138,36 @@ export async function fetchFocusExplanationStream(
   }
 }
 
+export async function fetchFlowchartStream(
+  filePath: string,
+  code: string,
+  apiKey: string,
+  callbacks: StreamCallbacks
+) {
+  try {
+    const response = await fetch("/api/flowchart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filePath, code, apiKey }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => null);
+      callbacks.onError(err?.error ?? `HTTPエラー: ${response.status}`);
+      return;
+    }
+
+    await consumeSSEStream(response, callbacks);
+  } catch {
+    callbacks.onError("ネットワークエラーが発生しました");
+  }
+}
+
+export function parseMermaidCode(text: string): string | null {
+  const match = text.match(/```(?:mermaid)?\s*([\s\S]*?)```/);
+  return match ? match[1].trim() : null;
+}
+
 export function parseExplanationJSON(
   text: string
 ): FileExplanation["explanations"] | null {

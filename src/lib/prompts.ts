@@ -124,6 +124,36 @@ ${levelInstruction}
 `;
 }
 
+export function buildFlowchartPrompt(filePath: string, code: string): string {
+  return `あなたはプログラミング教育の専門家です。以下のソースコードの処理フローをMermaidフローチャートで表現してください。
+
+## 対象ファイル
+パス: ${filePath}
+
+## ソースコード
+\`\`\`
+${code}
+\`\`\`
+
+## 出力形式
+- Mermaid記法の \`flowchart TD\` を使用
+- Mermaidコードブロックのみ出力し、説明テキストは含めない
+- 主要な処理フローのみ簡潔に含める（細かい実装詳細は省略）
+- ノードラベルは日本語で記述
+- 条件分岐がある場合はひし形ノードを使用
+
+## 例
+\`\`\`mermaid
+flowchart TD
+    A[開始] --> B[データ取得]
+    B --> C{データあり?}
+    C -->|Yes| D[処理実行]
+    C -->|No| E[エラー表示]
+    D --> F[結果返却]
+\`\`\`
+`;
+}
+
 export function buildGlobalSummaryPrompt(
   fileStructure: string,
   sampleContents: string
