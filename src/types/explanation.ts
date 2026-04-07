@@ -1,5 +1,7 @@
 export type ExplanationLevel = "beginner" | "intermediate" | "advanced";
 
+export type ActiveTab = "explanation" | "reference";
+
 export type Difficulty = "green" | "amber" | "red";
 
 export interface CAnalogy {

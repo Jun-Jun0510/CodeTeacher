@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { FileNode } from "@/types/fileTree";
 import type {
+  ActiveTab,
   ExplanationLevel,
   FileExplanation,
   GlobalSummaryData,
@@ -17,6 +18,9 @@ interface ProjectState {
 
   fileContents: Record<string, string>;
   setFileContent: (path: string, content: string) => void;
+
+  activeTab: ActiveTab;
+  setActiveTab: (tab: ActiveTab) => void;
 
   activeLevel: ExplanationLevel;
   setActiveLevel: (level: ExplanationLevel) => void;
@@ -83,6 +87,7 @@ const initialState = {
   fileTree: [],
   selectedFilePath: null,
   fileContents: {},
+  activeTab: "explanation" as ActiveTab,
   activeLevel: "beginner" as ExplanationLevel,
   expandAllLevels: false,
   viewMode: "welcome" as ViewMode,
@@ -121,6 +126,8 @@ export const useProjectStore = create<ProjectState>((set) => ({
     set((state) => ({
       fileContents: { ...state.fileContents, [path]: content },
     })),
+
+  setActiveTab: (tab) => set({ activeTab: tab }),
 
   setActiveLevel: (level) => set({ activeLevel: level }),
 
